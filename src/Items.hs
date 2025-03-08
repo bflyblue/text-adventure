@@ -1,3 +1,5 @@
+{-# LANGUAGE StrictData #-}
+
 module Items (
   Item (..),
   ItemType (..),

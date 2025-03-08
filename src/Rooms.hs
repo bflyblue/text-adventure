@@ -1,3 +1,5 @@
+{-# LANGUAGE StrictData #-}
+
 module Rooms (
   Room (..),
   roomDescriptions,
@@ -9,7 +11,7 @@ module Rooms (
 ) where
 
 import Data.Map (Map)
-import qualified Data.Map as Map
+import Data.Map qualified as Map
 import Types (Direction (..))
 
 -- Room type

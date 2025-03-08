@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE StrictData #-}
 
 module Parser (
   parseCommand,
@@ -8,11 +9,11 @@ import Commands (Command (..))
 import Control.Monad (void, when)
 import Data.Char (isSpace, toLower)
 import Data.Text (Text)
-import qualified Data.Text as T
+import Data.Text qualified as T
 import Data.Void (Void)
 import Text.Megaparsec
 import Text.Megaparsec.Char
-import qualified Text.Megaparsec.Char.Lexer as L
+import Text.Megaparsec.Char.Lexer qualified as L
 import Types (Direction (..))
 
 type Parser = Parsec Void Text
@@ -26,7 +27,7 @@ symbol = L.symbol space
 
 -- Parse a word that isn't a reserved word
 word :: Parser Text
-word = lexeme $ takeWhile1P (Just "word") (\c -> not (isSpace c))
+word = lexeme $ takeWhile1P (Just "word") (not . isSpace)
 
 -- Parse articles (a, an, the) and throw them away
 article :: Parser ()
