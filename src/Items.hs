@@ -106,7 +106,7 @@ getItemName item =
     baseType = Map.findWithDefault Sword item itemTypes
     baseStr = Map.findWithDefault "unknown" baseType typeNames
    in
-    unwords $ filter (not . (== "metal")) adjectiveStrs ++ [baseStr]
+    unwords $ filter (/= "metal") adjectiveStrs ++ [baseStr]
 
 getItemDescription :: Item -> String
 getItemDescription item = Map.findWithDefault "No description available." item itemDescriptions
