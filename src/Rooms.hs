@@ -3,12 +3,9 @@
 
 module Rooms (
   Room (..),
-  roomDescriptions,
-  roomNames,
+  roomDescription,
+  roomName,
   roomExits,
-  getRoomDescription,
-  getRoomName,
-  getRoomExits,
 ) where
 
 import Data.Map (Map)
@@ -21,41 +18,19 @@ data Room
   = ForestClearing
   | AbandonedCabin
   | RiverBank
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Enum, Bounded)
 
--- Room descriptions
-roomDescriptions :: Map Room Text
-roomDescriptions =
-  Map.fromList
-    [ (ForestClearing, "You are in a peaceful forest clearing. Sunlight filters through the leaves above.")
-    , (AbandonedCabin, "An old wooden cabin stands here, its door hanging loose on rusty hinges.")
-    , (RiverBank, "A gentle river flows here. The water looks cool and refreshing.")
-    ]
+roomDescription :: Room -> Text
+roomDescription ForestClearing = "You are in a peaceful forest clearing. Sunlight filters through the leaves above."
+roomDescription AbandonedCabin = "An old wooden cabin stands here, its door hanging loose on rusty hinges."
+roomDescription RiverBank = "A gentle river flows here. The water looks cool and refreshing."
 
--- Room names
-roomNames :: Map Room Text
-roomNames =
-  Map.fromList
-    [ (ForestClearing, "Forest Clearing")
-    , (AbandonedCabin, "Abandoned Cabin")
-    , (RiverBank, "River Bank")
-    ]
+roomName :: Room -> Text
+roomName ForestClearing = "Forest Clearing"
+roomName AbandonedCabin = "Abandoned Cabin"
+roomName RiverBank = "River Bank"
 
--- Room exits
-roomExits :: Map Room (Map Direction Room)
-roomExits =
-  Map.fromList
-    [ (ForestClearing, Map.fromList [(North, AbandonedCabin), (East, RiverBank)])
-    , (AbandonedCabin, Map.fromList [(South, ForestClearing)])
-    , (RiverBank, Map.fromList [(West, ForestClearing)])
-    ]
-
--- Helper functions
-getRoomDescription :: Room -> Text
-getRoomDescription room = Map.findWithDefault "You are in an undefined space." room roomDescriptions
-
-getRoomName :: Room -> Text
-getRoomName room = Map.findWithDefault "Unnamed Room" room roomNames
-
-getRoomExits :: Room -> Map Direction Room
-getRoomExits room = Map.findWithDefault Map.empty room roomExits
+roomExits :: Room -> Map Direction Room
+roomExits ForestClearing = Map.fromList [(North, AbandonedCabin), (East, RiverBank)]
+roomExits AbandonedCabin = Map.fromList [(South, ForestClearing)]
+roomExits RiverBank = Map.fromList [(West, ForestClearing)]

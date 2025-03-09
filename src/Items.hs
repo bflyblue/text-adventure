@@ -20,7 +20,6 @@ module Items (
   -- Item matching and collections
   matchesItem,
   matchItem,
-  allItems,
 ) where
 
 import Data.Aeson (FromJSON, ToJSON)
@@ -95,9 +94,6 @@ itemDescription = dDescription . itemDef
 
 itemName :: Item -> Text
 itemName i = T.unwords (map adjectiveName (Set.toList (itemAdjectives i))) <> " " <> itemTypeName (itemType i)
-
-allItems :: [Item]
-allItems = [minBound .. maxBound]
 
 matchesItem :: ItemType -> [Adjective] -> Item -> Bool
 matchesItem reqType reqAdjs item =
