@@ -7,10 +7,10 @@ module Parser (
 
 import Commands (Command (..))
 import Control.Monad (void, when)
-import Data.Char (isSpace, toLower)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Void (Void)
+import Items
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer qualified as L
@@ -18,25 +18,18 @@ import Types (Direction (..))
 
 type Parser = Parsec Void Text
 
--- Parser utilities
-lexeme :: Parser a -> Parser a
-lexeme = L.lexeme space
-
-symbol :: Text -> Parser Text
-symbol = L.symbol space
-
--- Parse a word that isn't a reserved word
-word :: Parser Text
-word = lexeme $ takeWhile1P (Just "word") (not . isSpace)
+-- Match a word
+word :: Text -> Parser Text
+word = L.symbol space
 
 -- Parse articles (a, an, the) and throw them away
 article :: Parser ()
 article =
   void $
     choice
-      [ symbol "a"
-      , symbol "an"
-      , symbol "the"
+      [ word "a"
+      , word "an"
+      , word "the"
       ]
 
 -- Optional parser
@@ -47,42 +40,48 @@ optional' p = void $ optional p
 direction :: Parser Direction
 direction =
   choice
-    [ North <$ (symbol "north" <|> symbol "n")
-    , South <$ (symbol "south" <|> symbol "s")
-    , East <$ (symbol "east" <|> symbol "e")
-    , West <$ (symbol "west" <|> symbol "w")
+    [ North <$ (word "north" <|> word "n")
+    , South <$ (word "south" <|> word "s")
+    , East <$ (word "east" <|> word "e")
+    , West <$ (word "west" <|> word "w")
     ]
 
--- Item name parser (allows multiple words)
-parseItemName :: Parser String
-parseItemName = T.unpack . T.unwords <$> some word
+enumerate :: (Enum a, Bounded a) => (a -> Text) -> Parser a
+enumerate f =
+  choice $ map (\x -> try $ x <$ word (f x)) [minBound .. maxBound]
+
+adjective :: Parser Adjective
+adjective = enumerate adjectiveName
+
+itemType' :: Parser ItemType
+itemType' = enumerate itemTypeName
 
 -- Command parser
 command :: Parser Command
 command =
   choice
-    [ Look <$ (symbol "look" <|> symbol "l")
-    , Inventory <$ (symbol "inventory" <|> symbol "i")
+    [ Look <$ (word "look" <|> word "l")
+    , Inventory <$ (word "inventory" <|> word "i")
     , try $ do
-        verb <- symbol "take" <|> symbol "get" <|> symbol "pick"
-        when (verb == "pick") $ void $ symbol "up"
+        verb <- word "take" <|> word "get" <|> word "pick"
+        when (verb == "pick") $ void $ word "up"
         optional' article
-        Take <$> parseItemName
+        Take <$> many adjective <*> itemType'
     , try $ do
-        void $ symbol "drop" <|> symbol "put"
-        optional' $ symbol "down"
+        void $ word "drop" <|> word "put"
+        optional' $ word "down"
         optional' article
-        Drop <$> parseItemName
+        Drop <$> many adjective <*> itemType'
     , try $ do
-        void $ symbol "go" <|> symbol "move"
+        void $ word "go" <|> word "move"
         Move <$> direction
     , Move <$> direction
-    , Help <$ symbol "help"
-    , Quit <$ (symbol "quit" <|> symbol "exit" <|> symbol "q")
+    , Help <$ word "help"
+    , Quit <$ (word "quit" <|> word "exit" <|> word "q")
     ]
 
 -- Parse user input into commands
-parseCommand :: String -> Either String Command
-parseCommand input = case parse (space *> command <* eof) "" (T.pack $ map toLower input) of
-  Left err -> Left $ errorBundlePretty err
+parseCommand :: Text -> Either Text Command
+parseCommand input = case parse (space *> command <* eof) "" (T.toLower input) of
+  Left err -> Left $ T.pack $ errorBundlePretty err
   Right cmd -> Right cmd

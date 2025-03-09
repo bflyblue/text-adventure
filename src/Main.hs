@@ -1,14 +1,16 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
 
 module Main where
 
 import Commands (Command (..), CommandResult (..))
 import Control.Monad (unless)
-import Data.List (intercalate)
 import Data.Map (Map)
 import Data.Map qualified as Map
+import Data.Text qualified as T
+import Data.Text.IO qualified as TIO
 import GameState (GameState (..))
-import Items (Item (..), getItemName, matchItem)
+import Items (Item (..), adjectiveName, itemName, itemTypeName, matchItem)
 import Parser (parseCommand)
 import Rooms (
   Room (..),
@@ -17,6 +19,7 @@ import Rooms (
   getRoomName,
  )
 import System.IO (hFlush, stdout)
+import Types (dirName)
 
 -- Initial room items configuration
 initialRoomItems :: Map Room [Item]
@@ -53,12 +56,12 @@ handleCommand cmd state = case cmd of
       CommandResult state $
         if null (inventory state)
           then "Your inventory is empty."
-          else "You are carrying: " ++ intercalate ", " (map getItemName $ inventory state)
-  Take itemName ->
-    case matchItem itemName (getRoomItems (currentRoom state) state) of
-      Left err ->
-        pure $ CommandResult state err
-      Right [item] ->
+          else "You are carrying: " <> T.intercalate ", " (map itemName (inventory state))
+  Take adjs itemType ->
+    case matchItem adjs itemType (getRoomItems (currentRoom state) state) of
+      [] ->
+        pure $ CommandResult state $ "You don't see " <> T.intercalate ", " (map adjectiveName adjs) <> " " <> itemTypeName itemType <> "."
+      [item] ->
         pure $
           CommandResult
             ( state
@@ -66,16 +69,15 @@ handleCommand cmd state = case cmd of
                 , roomItems = Map.adjust (filter (/= item)) (currentRoom state) (roomItems state)
                 }
             )
-            ("You take the " ++ getItemName item ++ ".")
-      Right matches -> do
-        putStrLn $ "Which " ++ itemName ++ " do you mean?"
-        mapM_ (\item -> putStrLn $ "- " ++ getItemName item) matches
-        pure $ CommandResult state "Please be more specific."
-  Drop itemName ->
-    case matchItem itemName (inventory state) of
-      Left err ->
-        pure $ CommandResult state err
-      Right [item] ->
+            ("You take the " <> itemName item <> ".")
+      multipleItems -> do
+        let msg = T.unlines $ ("Which " <> itemTypeName itemType <> " do you mean?") : map (\i -> "- " <> itemName i) multipleItems
+        pure $ CommandResult state msg
+  Drop adjs itemType ->
+    case matchItem adjs itemType (inventory state) of
+      [] ->
+        pure $ CommandResult state $ "You don't see " <> T.intercalate ", " (map adjectiveName adjs) <> " " <> itemTypeName itemType <> "."
+      [item] ->
         pure $
           CommandResult
             ( state
@@ -83,18 +85,17 @@ handleCommand cmd state = case cmd of
                 , roomItems = Map.adjust (item :) (currentRoom state) (roomItems state)
                 }
             )
-            ("You drop the " ++ getItemName item ++ ".")
-      Right matches -> do
-        putStrLn $ "Which " ++ itemName ++ " do you mean?"
-        mapM_ (\item -> putStrLn $ "- " ++ getItemName item) matches
-        pure $ CommandResult state "Please be more specific."
+            ("You drop the " <> itemName item <> ".")
+      multipleItems -> do
+        let msg = T.unlines $ ("Which " <> itemTypeName itemType <> " do you mean?") : map (\i -> "- " <> itemName i) multipleItems
+        pure $ CommandResult state msg
   Move dir ->
     pure $ case Map.lookup dir (getRoomExits (currentRoom state)) of
-      Nothing -> CommandResult state $ "You can't go " ++ show dir ++ "."
+      Nothing -> CommandResult state $ "You can't go " <> dirName dir <> "."
       Just newRoom ->
         CommandResult
           (state{currentRoom = newRoom})
-          ("You move " ++ show dir ++ ".")
+          ("You move " <> dirName dir <> ".")
   Help -> pure $ CommandResult state "Type 'help' for a list of commands."
   Quit -> pure $ CommandResult state "Goodbye!"
 
@@ -102,58 +103,58 @@ handleCommand cmd state = case cmd of
 displayState :: GameState -> IO ()
 displayState state = do
   let room = currentRoom state
-  putStrLn $ "\n" ++ getRoomName room
-  putStrLn $ getRoomDescription room
+  TIO.putStrLn $ "\n" <> getRoomName room
+  TIO.putStrLn $ getRoomDescription room
   let items = getRoomItems room state
   unless (null items) $
-    putStrLn $
-      "You see: " ++ intercalate ", " (map getItemName items)
+    TIO.putStrLn $
+      "You see: " <> T.intercalate ", " (map itemName items)
   let exits = Map.keys $ getRoomExits room
   unless (null exits) $
-    putStrLn $
-      "Exits: " ++ intercalate ", " (map show exits)
+    TIO.putStrLn $
+      "Exits: " <> T.intercalate ", " (map dirName exits)
 
 -- Main game loop
 gameLoop :: GameState -> IO ()
 gameLoop state = do
-  putStr "> "
+  TIO.putStr "> "
   hFlush stdout
-  input <- getLine
+  input <- TIO.getLine
   case parseCommand input of
     Left err -> do
-      putStrLn $ "I don't understand that command: " ++ err
-      putStrLn "Type 'help' for a list of commands."
+      TIO.putStrLn $ "I don't understand that command: " <> err
+      TIO.putStrLn "Type 'help' for a list of commands."
       gameLoop state
     Right cmd -> case cmd of
-      Quit -> putStrLn "Thanks for playing!"
+      Quit -> TIO.putStrLn "Thanks for playing!"
       Help -> do
-        putStrLn "Available commands:"
-        putStrLn "  look                    - Look around the current room (or 'l')"
-        putStrLn "  inventory               - Check your inventory (or 'i')"
-        putStrLn "  take/get [item]        - Pick up an item"
-        putStrLn "  drop [item]            - Drop an item"
-        putStrLn "  go north/south/etc     - Move in a direction"
-        putStrLn "  north/south/east/west  - Move in a direction (or n/s/e/w)"
-        putStrLn "  quit                   - Exit the game (or 'exit', 'q')"
-        putStrLn "  help                   - Show this help message"
-        putStrLn ""
-        putStrLn "Notes:"
-        putStrLn "- Articles (a/an/the) are optional"
-        putStrLn "- Items can be referred to by their full name or base name"
-        putStrLn "  (e.g. 'take rusty sword' or just 'take sword')"
-        putStrLn "- You can use shorter directions (n/s/e/w)"
-        putStrLn "- 'pick up' works the same as 'take'"
+        TIO.putStrLn "Available commands:"
+        TIO.putStrLn "  look                    - Look around the current room (or 'l')"
+        TIO.putStrLn "  inventory               - Check your inventory (or 'i')"
+        TIO.putStrLn "  take/get [item]        - Pick up an item"
+        TIO.putStrLn "  drop [item]            - Drop an item"
+        TIO.putStrLn "  go north/south/etc     - Move in a direction"
+        TIO.putStrLn "  north/south/east/west  - Move in a direction (or n/s/e/w)"
+        TIO.putStrLn "  quit                   - Exit the game (or 'exit', 'q')"
+        TIO.putStrLn "  help                   - Show this help message"
+        TIO.putStrLn ""
+        TIO.putStrLn "Notes:"
+        TIO.putStrLn "- Articles (a/an/the) are optional"
+        TIO.putStrLn "- Items can be referred to by their full name or base name"
+        TIO.putStrLn "  (e.g. 'take rusty sword' or just 'take sword')"
+        TIO.putStrLn "- You can use shorter directions (n/s/e/w)"
+        TIO.putStrLn "- 'pick up' works the same as 'take'"
         gameLoop state
       _ -> do
         result <- handleCommand cmd state
-        putStrLn $ message result
+        TIO.putStrLn $ message result
         displayState (newState result)
         gameLoop (newState result)
 
 main :: IO ()
 main = do
-  putStrLn "Welcome to the Text Adventure!"
-  putStrLn "Type 'help' for a list of commands."
-  putStrLn ""
+  TIO.putStrLn "Welcome to the Text Adventure!"
+  TIO.putStrLn "Type 'help' for a list of commands."
+  TIO.putStrLn ""
   displayState initialState
   gameLoop initialState

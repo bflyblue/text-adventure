@@ -5,15 +5,17 @@ module Commands (
   CommandResult (..),
 ) where
 
+import Data.Text (Text)
 import GameState (GameState)
+import Items (Adjective, ItemType)
 import Types (Direction)
 
 -- Command types
 data Command
   = Look
   | Inventory
-  | Take String
-  | Drop String
+  | Take [Adjective] ItemType
+  | Drop [Adjective] ItemType
   | Move Direction
   | Help
   | Quit
@@ -22,5 +24,5 @@ data Command
 -- Command result type
 data CommandResult = CommandResult
   { newState :: GameState
-  , message :: String
+  , message :: Text
   }

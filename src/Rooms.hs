@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
 
 module Rooms (
@@ -12,6 +13,7 @@ module Rooms (
 
 import Data.Map (Map)
 import Data.Map qualified as Map
+import Data.Text (Text)
 import Types (Direction (..))
 
 -- Room type
@@ -22,7 +24,7 @@ data Room
   deriving (Show, Eq, Ord)
 
 -- Room descriptions
-roomDescriptions :: Map Room String
+roomDescriptions :: Map Room Text
 roomDescriptions =
   Map.fromList
     [ (ForestClearing, "You are in a peaceful forest clearing. Sunlight filters through the leaves above.")
@@ -31,7 +33,7 @@ roomDescriptions =
     ]
 
 -- Room names
-roomNames :: Map Room String
+roomNames :: Map Room Text
 roomNames =
   Map.fromList
     [ (ForestClearing, "Forest Clearing")
@@ -49,10 +51,10 @@ roomExits =
     ]
 
 -- Helper functions
-getRoomDescription :: Room -> String
+getRoomDescription :: Room -> Text
 getRoomDescription room = Map.findWithDefault "You are in an undefined space." room roomDescriptions
 
-getRoomName :: Room -> String
+getRoomName :: Room -> Text
 getRoomName room = Map.findWithDefault "Unnamed Room" room roomNames
 
 getRoomExits :: Room -> Map Direction Room
