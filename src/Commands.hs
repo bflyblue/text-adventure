@@ -13,6 +13,7 @@ import Types (Direction)
 -- Command types
 data Command
   = Look
+  | Examine [Adjective] ItemType
   | Inventory
   | Take [Adjective] ItemType
   | Drop [Adjective] ItemType

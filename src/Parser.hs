@@ -36,6 +36,9 @@ article =
 optional' :: Parser a -> Parser ()
 optional' p = void $ optional p
 
+optword :: Text -> Parser ()
+optword = optional' . word
+
 -- Direction parser
 direction :: Parser Direction
 direction =
@@ -56,28 +59,67 @@ adjective = enumerate adjectiveName
 itemType' :: Parser ItemType
 itemType' = enumerate itemTypeName
 
+look :: Parser Command
+look =
+  Look <$ (word "look" <|> word "l")
+
+examine :: Parser Command
+examine =
+  Examine
+    <$ choice [lookat, examine']
+    <*> many adjective
+    <*> itemType'
+ where
+  lookat = word "look" >> optword "at" >> article
+  examine' = word "examine" >> article
+
+inventory :: Parser Command
+inventory =
+  Inventory <$ (word "inventory" <|> word "i")
+
+take_ :: Parser Command
+take_ = take' <|> get <|> pickup
+ where
+  take' = try $ Take <$ word "take" <* optional' article <*> many adjective <*> itemType'
+  get = try $ Take <$ word "get" <* optional' article <*> many adjective <*> itemType'
+  pickup =
+    choice
+      [ try $ Take <$ word "pick" <* word "up" <* optional' article <*> many adjective <*> itemType'
+      , try $ Take <$ word "pick" <* optional' article <*> many adjective <*> itemType' <* word "up"
+      ]
+
+drop_ :: Parser Command
+drop_ = drop' <|> put
+ where
+  drop' = try $ Drop <$ word "drop" <* optional' article <*> many adjective <*> itemType'
+  put =
+    choice
+      [ try $ Drop <$ word "put" <* optional' (word "down") <* optional' article <*> many adjective <*> itemType'
+      , try $ Drop <$ word "put" <* optional' article <*> many adjective <*> itemType' <* word "down"
+      ]
+
+move :: Parser Command
+move =
+  Move <$ (word "go" <|> word "move") <*> direction
+
+help :: Parser Command
+help = Help <$ word "help"
+
+quit :: Parser Command
+quit = Quit <$ (word "quit" <|> word "exit" <|> word "q")
+
 -- Command parser
 command :: Parser Command
 command =
   choice
-    [ Look <$ (word "look" <|> word "l")
-    , Inventory <$ (word "inventory" <|> word "i")
-    , try $ do
-        verb <- word "take" <|> word "get" <|> word "pick"
-        when (verb == "pick") $ void $ word "up"
-        optional' article
-        Take <$> many adjective <*> itemType'
-    , try $ do
-        void $ word "drop" <|> word "put"
-        optional' $ word "down"
-        optional' article
-        Drop <$> many adjective <*> itemType'
-    , try $ do
-        void $ word "go" <|> word "move"
-        Move <$> direction
-    , Move <$> direction
-    , Help <$ word "help"
-    , Quit <$ (word "quit" <|> word "exit" <|> word "q")
+    [ look
+    , examine
+    , inventory
+    , take_
+    , drop_
+    , move
+    , help
+    , quit
     ]
 
 -- Parse user input into commands
