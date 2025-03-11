@@ -3,7 +3,7 @@
 
 module Main where
 
-import Commands (Command (..), CommandResult (..))
+import Commands (Command (..), CommandResult (..), ItemSelection (..))
 import Control.Monad (unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State.Strict (gets)
@@ -13,7 +13,7 @@ import Data.Text.IO qualified as TIO
 import Game.Initial (initialState)
 import Game.Monad (Game, dropItemToRoom, getRoomItems, moveToRoom, runGame, takeItemFromRoom)
 import Game.State (GameState (..))
-import Items (Adjective, Item, ItemType, adjectiveName, itemName, itemTypeName, matchItem)
+import Items (Item, adjectiveName, itemName, itemTypeName, matchItem)
 import Parser (parseCommand)
 import Rooms (
   roomDescription,
@@ -35,13 +35,13 @@ handleCommand cmd = do
           if null inventory'
             then "Your inventory is empty."
             else "You are carrying: " <> T.intercalate ", " (map itemName inventory')
-    Take adjs itemType -> do
-      singleItemAction adjs itemType $ \item -> do
+    Take itemSelection -> do
+      singleItemAction itemSelection $ \item -> do
         room <- gets currentRoom
         takeItemFromRoom room item
         pure $ CommandResult $ "You take the " <> itemName item <> "."
-    Drop adjs itemType -> do
-      singleItemAction adjs itemType $ \item -> do
+    Drop itemSelection -> do
+      singleItemAction itemSelection $ \item -> do
         room <- gets currentRoom
         dropItemToRoom room item
         pure $ CommandResult $ "You drop the " <> itemName item <> "."
@@ -56,8 +56,8 @@ handleCommand cmd = do
     Quit -> pure $ CommandResult "Goodbye!"
     _ -> pure $ CommandResult "Unknown command."
 
-singleItemAction :: [Adjective] -> ItemType -> (Item -> Game CommandResult) -> Game CommandResult
-singleItemAction adjs itemType action = do
+singleItemAction :: ItemSelection -> (Item -> Game CommandResult) -> Game CommandResult
+singleItemAction (ItemSelection adjs itemType) action = do
   room <- gets currentRoom
   roomItems <- getRoomItems room
   case matchItem adjs itemType roomItems of
@@ -70,7 +70,6 @@ singleItemAction adjs itemType action = do
 write :: T.Text -> Game ()
 write = liftIO . TIO.putStrLn
 
--- Display current game state
 displayState :: Game ()
 displayState = do
   room <- gets currentRoom
@@ -85,7 +84,6 @@ displayState = do
     write $
       "Exits: " <> T.intercalate ", " (map dirName exits)
 
--- Main game loop
 gameLoop :: Game ()
 gameLoop = do
   displayState

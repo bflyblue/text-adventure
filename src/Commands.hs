@@ -1,30 +1,33 @@
 {-# LANGUAGE StrictData #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Use newtype instead of data" #-}
 
 module Commands (
   Command (..),
   CommandResult (..),
+  ItemSelection (..),
 ) where
 
 import Data.Text (Text)
+import GHC.Generics (Generic)
 import Items (Adjective, ItemType)
 import Types (Direction)
 
 -- Command types
 data Command
   = Look
-  | Examine [Adjective] ItemType
+  | Examine ItemSelection
   | Inventory
-  | Take [Adjective] ItemType
-  | Drop [Adjective] ItemType
+  | Take ItemSelection
+  | Drop ItemSelection
   | Move Direction
   | Help
   | Quit
-  deriving (Show)
+  deriving (Show, Eq, Ord, Generic)
 
--- Command result type
-data CommandResult = CommandResult
+data ItemSelection
+  = ItemSelection [Adjective] ItemType
+  deriving (Show, Eq, Ord, Generic)
+
+newtype CommandResult = CommandResult
   { message :: Text
   }
+  deriving (Show, Eq, Ord, Generic)

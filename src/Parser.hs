@@ -5,7 +5,7 @@ module Parser (
   parseCommand,
 ) where
 
-import Commands (Command (..))
+import Commands (Command (..), ItemSelection (..))
 import Control.Monad (void)
 import Data.Text (Text)
 import Data.Text qualified as T
@@ -39,7 +39,6 @@ optional' p = void $ optional p
 optword :: Text -> Parser ()
 optword = optional' . word
 
--- Direction parser
 direction :: Parser Direction
 direction =
   choice
@@ -59,6 +58,12 @@ adjective = enumerate adjectiveName
 itemType' :: Parser ItemType
 itemType' = enumerate itemTypeName
 
+itemSelection :: Parser ItemSelection
+itemSelection =
+  ItemSelection
+    <$> many adjective
+    <*> itemType'
+
 look :: Parser Command
 look =
   Look <$ (word "look" <|> word "l")
@@ -67,8 +72,7 @@ examine :: Parser Command
 examine =
   Examine
     <$ choice [lookat, examine']
-    <*> many adjective
-    <*> itemType'
+    <*> itemSelection
  where
   lookat = word "look" >> optword "at" >> article
   examine' = word "examine" >> article
@@ -80,22 +84,22 @@ inventory =
 take_ :: Parser Command
 take_ = take' <|> get <|> pickup
  where
-  take' = try $ Take <$ word "take" <* optional' article <*> many adjective <*> itemType'
-  get = try $ Take <$ word "get" <* optional' article <*> many adjective <*> itemType'
+  take' = try $ Take <$ word "take" <* optional' article <*> itemSelection
+  get = try $ Take <$ word "get" <* optional' article <*> itemSelection
   pickup =
     choice
-      [ try $ Take <$ word "pick" <* word "up" <* optional' article <*> many adjective <*> itemType'
-      , try $ Take <$ word "pick" <* optional' article <*> many adjective <*> itemType' <* word "up"
+      [ try $ Take <$ word "pick" <* word "up" <* optional' article <*> itemSelection
+      , try $ Take <$ word "pick" <* optional' article <*> itemSelection <* word "up"
       ]
 
 drop_ :: Parser Command
 drop_ = drop' <|> put
  where
-  drop' = try $ Drop <$ word "drop" <* optional' article <*> many adjective <*> itemType'
+  drop' = try $ Drop <$ word "drop" <* optional' article <*> itemSelection
   put =
     choice
-      [ try $ Drop <$ word "put" <* optional' (word "down") <* optional' article <*> many adjective <*> itemType'
-      , try $ Drop <$ word "put" <* optional' article <*> many adjective <*> itemType' <* word "down"
+      [ try $ Drop <$ word "put" <* optional' (word "down") <* optional' article <*> itemSelection
+      , try $ Drop <$ word "put" <* optional' article <*> itemSelection <* word "down"
       ]
 
 move :: Parser Command
