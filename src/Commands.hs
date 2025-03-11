@@ -1,4 +1,7 @@
 {-# LANGUAGE StrictData #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Use newtype instead of data" #-}
 
 module Commands (
   Command (..),
@@ -6,7 +9,6 @@ module Commands (
 ) where
 
 import Data.Text (Text)
-import GameState (GameState)
 import Items (Adjective, ItemType)
 import Types (Direction)
 
@@ -24,6 +26,5 @@ data Command
 
 -- Command result type
 data CommandResult = CommandResult
-  { newState :: GameState
-  , message :: Text
+  { message :: Text
   }

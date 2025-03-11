@@ -1,32 +1,10 @@
-{-# LANGUAGE StrictData #-}
+module Game.Actions where
 
-module GameState (
-  GameState (..),
-  getRoomItems,
-  takeItemFromRoom,
-  dropItemToRoom,
-  addItemToRoom,
-  removeItemFromRoom,
-  addItemToInventory,
-  removeItemFromInventory,
-  initialRoomItems,
-  initialState,
-) where
-
-import Data.Map (Map)
 import Data.Map.Strict qualified as Map
-import Items (Item (..))
-import Rooms (Room (..))
+import Game.State
+import Items (Item)
+import Rooms (Room)
 
--- Game state type
-data GameState = GameState
-  { currentRoom :: Room
-  , inventory :: [Item]
-  , roomItems :: Map Room [Item]
-  }
-  deriving (Show)
-
--- Helper functions for room state
 getRoomItems :: Room -> GameState -> [Item]
 getRoomItems room state = Map.findWithDefault [] room (roomItems state)
 
@@ -54,20 +32,6 @@ removeItemFromInventory :: Item -> GameState -> GameState
 removeItemFromInventory item state =
   state{inventory = filter (/= item) (inventory state)}
 
--- Initial room items configuration
-initialRoomItems :: Map Room [Item]
-initialRoomItems =
-  Map.fromList
-    [ (ForestClearing, [RustySword, SilverSword])
-    , (AbandonedCabin, [BrassLantern])
-    , (RiverBank, [WaterFlask, EmptyFlask])
-    ]
-
--- Initial game state
-initialState :: GameState
-initialState =
-  GameState
-    { currentRoom = ForestClearing
-    , inventory = []
-    , roomItems = initialRoomItems
-    }
+moveToRoom :: Room -> GameState -> GameState
+moveToRoom room state =
+  state{currentRoom = room}

@@ -6,7 +6,7 @@ module Parser (
 ) where
 
 import Commands (Command (..))
-import Control.Monad (void, when)
+import Control.Monad (void)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Void (Void)
@@ -99,8 +99,10 @@ drop_ = drop' <|> put
       ]
 
 move :: Parser Command
-move =
-  Move <$ (word "go" <|> word "move") <*> direction
+move = move' <|> direction'
+ where
+  move' = Move <$ (word "go" <|> word "move") <*> direction
+  direction' = Move <$> direction
 
 help :: Parser Command
 help = Help <$ word "help"

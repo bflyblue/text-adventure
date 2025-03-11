@@ -30,8 +30,12 @@ executable adventure
   ghc-options:    -O -threaded -feager-blackholing
   other-modules:
     Commands
-    GameState
+    Game.Actions
+    Game.Initial
+    Game.Monad
+    Game.State
     Items
+    Ollama
     Parser
     Rooms
     Types
@@ -41,4 +45,5 @@ executable adventure
     , base        ^>=4.19.0.0
     , containers
     , megaparsec
+    , mtl
     , text
