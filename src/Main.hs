@@ -3,7 +3,7 @@
 
 module Main where
 
-import Commands (Command (..), CommandResult (..), ItemSelection (..))
+import Commands (Command (..), CommandResult (..))
 import Control.Monad (unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State.Strict (gets)
@@ -13,7 +13,7 @@ import Data.Text.IO qualified as TIO
 import Game.Initial (initialState)
 import Game.Monad (Game, dropItemToRoom, getRoomItems, moveToRoom, runGame, takeItemFromRoom)
 import Game.State (GameState (..))
-import Items (Item, adjectiveName, itemName, itemTypeName, matchItem)
+import Items (Item, ItemSelection (..), adjectiveName, itemName, itemTypeName, matchItem)
 import Parser (parseCommand)
 import Rooms (
   roomDescription,
@@ -57,15 +57,25 @@ handleCommand cmd = do
     _ -> pure $ CommandResult "Unknown command."
 
 singleItemAction :: ItemSelection -> (Item -> Game CommandResult) -> Game CommandResult
-singleItemAction (ItemSelection adjs itemType) action = do
+singleItemAction itemSelection@(ItemSelection adjs itemType) action = do
   room <- gets currentRoom
   roomItems <- getRoomItems room
-  case matchItem adjs itemType roomItems of
+  case matchItem itemSelection roomItems of
     [] ->
-      pure $ CommandResult $ "You don't see " <> T.intercalate ", " (map adjectiveName adjs) <> " " <> itemTypeName itemType <> "."
+      pure $
+        CommandResult $
+          "You don't see "
+            <> T.intercalate ", " (map adjectiveName adjs)
+            <> " "
+            <> itemTypeName itemType
+            <> "."
     [item] -> action item
     multipleItems -> do
-      pure $ CommandResult $ T.unlines $ ("Which " <> itemTypeName itemType <> " do you mean?") : map (\i -> "- " <> itemName i) multipleItems
+      pure $
+        CommandResult $
+          T.unlines $
+            ("Which " <> itemTypeName itemType <> " do you mean?")
+              : map (\i -> "- " <> itemName i) multipleItems
 
 write :: T.Text -> Game ()
 write = liftIO . TIO.putStrLn

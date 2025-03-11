@@ -9,6 +9,7 @@ module Items (
   Item (..),
   ItemType (..),
   Adjective (..),
+  ItemSelection (..),
   -- Core type-to-string conversions
   itemTypeName,
   adjectiveName,
@@ -101,5 +102,12 @@ matchesItem reqType reqAdjs item =
  where
   ItemDef{dItemType, dAdjectives} = itemDef item
 
-matchItem :: [Adjective] -> ItemType -> [Item] -> [Item]
-matchItem reqAdjs reqType = filter (matchesItem reqType reqAdjs)
+data ItemSelection
+  = ItemSelection
+  { selectionAdjectives :: [Adjective]
+  , selectionItemType :: ItemType
+  }
+  deriving (Show, Eq, Ord, Generic)
+
+matchItem :: ItemSelection -> [Item] -> [Item]
+matchItem (ItemSelection reqAdjs reqType) = filter (matchesItem reqType reqAdjs)

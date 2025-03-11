@@ -3,12 +3,11 @@
 module Commands (
   Command (..),
   CommandResult (..),
-  ItemSelection (..),
 ) where
 
 import Data.Text (Text)
 import GHC.Generics (Generic)
-import Items (Adjective, ItemType)
+import Items (ItemSelection)
 import Types (Direction)
 
 -- Command types
@@ -21,10 +20,6 @@ data Command
   | Move Direction
   | Help
   | Quit
-  deriving (Show, Eq, Ord, Generic)
-
-data ItemSelection
-  = ItemSelection [Adjective] ItemType
   deriving (Show, Eq, Ord, Generic)
 
 newtype CommandResult = CommandResult

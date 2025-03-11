@@ -5,7 +5,7 @@ module Parser (
   parseCommand,
 ) where
 
-import Commands (Command (..), ItemSelection (..))
+import Commands (Command (..))
 import Control.Monad (void)
 import Data.Text (Text)
 import Data.Text qualified as T
